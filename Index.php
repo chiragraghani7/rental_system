@@ -308,7 +308,100 @@
                     console.log('AJAX request failed. Error: ' + error);
                 }
         });
-    } 
+    } else if(option === 'avg_rent_by_city'){
+        var cityName = $('#cityName').val();
+            if (!cityName) {
+                alert('Please enter the name of the City');
+                return;
+            }
+            $.ajax({
+                url: 'process.php',
+                type: 'POST',
+                data: { option: option, cityName: cityName },
+                dataType: 'json',
+                success: function(response) {
+                    var averageRent = parseFloat(response);
+                        if (!isNaN(averageRent)) {
+                            var averageRentHTML = '<p>The average rent for managed properties in ' + cityName + ' is $' + averageRent.toFixed(2) + '.</p>';
+                            $('#result').html(averageRentHTML);
+                        } else {
+                            $('#result').html('Unable to calculate the average rent for the given city: '+cityName);
+                        }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX request failed. Error: ' + error);
+                }
+            });
+    } else if(option === 'show_properties_availabe_in_2_months'){
+        $.ajax({
+                url: 'process.php',
+                type: 'POST',
+                data: { option: option },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.length > 0) {
+                    var html = '<table><thead><tr><th>Name</th><th>Street</th><th>City</th><th>Zip</th></tr></thead><tbody>';
+                    $.each(response, function(index, property) {
+                        html += '<tr>';
+                        html += '<td>' + property.name + '</td>';
+                        html += '<td>' + property.street + '</td>';
+                        html += '<td>' + property.city + '</td>';
+                        html += '<td>' + property.zip + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    $('#result').html(html);
+        } else {
+            $('#result').html('<p>No properties found</p>');
+        }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX request failed. Error: ' + error);
+                }
+            });
+    } else if(option === 'calculate_agency_earnings_per_month'){
+        $.ajax({
+                url: 'process.php',
+                type: 'POST',
+                data: { option: option },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                    var earningsPerMonth = response.earningsPerMonth;
+
+                    // Clear the existing content
+                    $('#earningsTable').empty();
+
+                    // Create the table headers
+                    var tableHeaders = '<tr><th>Month</th><th>Earnings</th></tr>';
+
+                    // Create the table rows with earnings data
+                    var tableRows = '';
+                    for (var key in earningsPerMonth) {
+                    if (earningsPerMonth.hasOwnProperty(key)) {
+                        var monthYear = key;
+                        var earnings = parseFloat(earningsPerMonth[key]);
+
+                        // Add the row with data
+                        tableRows += '<tr><td>' + monthYear + '</td><td>' + earnings.toFixed(2) + '$</td></tr>';
+                    }
+                    }
+
+                    // Combine headers and rows into a table
+                    var earningsTable = '<table>' + tableHeaders + tableRows + '</table>';
+
+                    // Append the table to the earningsTable div
+                    $('#earningsTable').append(earningsTable);
+                } else {
+                    // Handle error response
+                    $('#earningsTable').html('<p>Error: ' + response.message + '</p>');
+                }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX request failed. Error: ' + error);
+                }
+            });
+    }
     else {
                     $.ajax({
                         url: 'process.php',
@@ -325,6 +418,7 @@
     function clearResult() {
         $('#result').html('');
         $('#leaseDocumentContainer').html('');
+        $('#earningsTable').html('');
     }
 
     // Function to hide and clear input fields
@@ -333,6 +427,7 @@
         $('.input-field2').val('').hide();
         $('#propertyFilter').hide();
         $('#branchInput').hide();
+        $('#cityInput').hide();
         $('#leaseFields').hide();
     }
 
@@ -353,6 +448,8 @@
                 $('#propertyFilter').show();
             } else if (option === 'create_lease_agreement') {
                 $('#leaseFields').show();
+            } else if (option === 'avg_rent_by_city'){
+                $('#cityInput').show();
             }
         });
 
@@ -374,6 +471,9 @@
         <option value="show_available_properties_by_branch">Show Available Properties by Branch</option>
         <option value="create_lease_agreement">Create Lease Agreement</option>
         <option value="show_renters_with_more_than_one_lease">Show Renters with more than one Lease Agreement</option>
+        <option value="avg_rent_by_city">Show Average rent by city</option>
+        <option value="show_properties_availabe_in_2_months">Show properties that will be Available in 2 months</option>
+        <option value="calculate_agency_earnings_per_month">Calculate Agency Earnings per month</option>
         <!-- Add more options as needed -->
     </select>
     <br>
@@ -396,6 +496,12 @@
         <label for="branchName">Enter the name of the branch:</label>
         <input type="text" name="branchName" id="branchName">
     </div>
+
+    <div id="cityInput" style="display: none;">
+        <label for="city">Enter the name of the city:</label>
+        <input type="text" name="cityName" id="cityName">
+    </div>
+
     <br>
     <div class="input-field" style="display: none;">
         <label for="ownerName">Owner Name:</label>
@@ -452,6 +558,7 @@
 </form>
 <div id="result"></div>
 <div id="leaseDocumentContainer"></div>
+<div id="earningsTable"></div>
 
 </body>
 </html>

@@ -279,7 +279,6 @@ function getPropertiesByCriteria($city, $numRooms, $minRent, $maxRent) {
               FROM RentalProperty rp
               WHERE 1=1";
 
-    $params = array();
 
     if ($city) {
         $query .= " AND rp.city = ?";
@@ -445,6 +444,69 @@ function getPropertiesByCriteria($city, $numRooms, $minRent, $maxRent) {
         return $renters;
 
         
+    }
+
+    public function getAverageRentByCity($city){
+        $query = "SELECT AVG(monthly_rent) AS averageRent
+                  FROM RentalProperty
+                  WHERE city = ?";
+
+        $params = array($city);
+        $result = $this->db->executeQuery($query,$params);
+        $avg_rent = null;
+        while ($row = $result->fetch_assoc()) {
+            $avg_rent = $row['averageRent'];
+        }
+
+        return $avg_rent;
+
+    }
+
+    public function getPropertiesAvailabeIn2Months(){
+        $query = "SELECT RentalProperty.name,RentalProperty.street, RentalProperty.city, RentalProperty.zip
+        FROM LeaseAgreement
+        JOIN RentalProperty ON LeaseAgreement.property_number = RentalProperty.property_number
+        WHERE LeaseAgreement.end_date >= CURDATE() AND LeaseAgreement.end_date <= DATE_ADD(CURDATE(), INTERVAL 2 MONTH)";
+
+        $params = array();
+        $result = $this->db->executeQuery($query,$params);
+        $properties = array();
+        while ($row = $result->fetch_assoc()) {
+            $properties[] = $row;
+        }
+
+        return $properties;
+
+    }
+
+    public function calculateAgencyEarningsPerMonth(){
+        $query = "SELECT MONTH(leaseagreement.start_date) AS month,
+                    YEAR(leaseagreement.start_date) AS year,
+                    SUM(rentalproperty.monthly_rent * 0.1) AS earnings
+                    FROM rentalproperty
+                    JOIN leaseagreement ON rentalproperty.property_number = leaseagreement.property_number
+                    WHERE rentalproperty.status = 'Rented'
+                    GROUP BY YEAR(leaseagreement.start_date), MONTH(leaseagreement.start_date);";
+
+        $params = array();
+        $result = $this->db->executeQuery($query,$params);
+        $earningsPerMonth = array();
+        while ($row = $result->fetch_assoc()) {
+            $month = $row['month'];
+            $year = $row['year'];
+            $earnings = $row['earnings'];
+
+            // Store the earnings in the array using the month and year as keys
+            $earningsPerMonth["$month-$year"] = $earnings;
+        }
+        $response = array(
+            'status' => 'success',
+            'message' => 'Agency earnings calculated successfully.',
+            'earningsPerMonth' => $earningsPerMonth
+        );
+
+        return $response;
+
     }
 
     /**

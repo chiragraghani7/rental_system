@@ -58,6 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $renters = new ShowRenter();
             $response = $renters->showRenterWithMoreThanOneLease();
             break;
+        case 'avg_rent_by_city':
+            $city = $_POST['cityName'];
+            $rentalProperty = new RentalManagementSystem();
+            $response = $rentalProperty->getAverageRentByCity($city);
+            break;
+        case 'show_properties_availabe_in_2_months':
+            $rentalProperty = new RentalManagementSystem();
+            $response = $rentalProperty->getPropertiesAvailabeIn2Months();
+            break;
+        case 'calculate_agency_earnings_per_month':
+            $rentalProperty = new RentalManagementSystem();
+            $response = $rentalProperty->calculateAgencyEarningsPerMonth();
+            break;
         default:
             $response = 'Invalid optionsss';
             break;
