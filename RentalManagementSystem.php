@@ -23,25 +23,49 @@ class RentalManagementSystem {
      * @param mixed $branchName
      * @return array<Property>
      */
-    public function getvailablePropertiesByBranch() {
-        $query = "SELECT b.branch AS branchName, COUNT(*) AS numPropertiesAvailable
-                    FROM rentalproperty rp
-                    INNER JOIN supervisor s ON rp.supervisor_id = s.supervisor_id
-                    INNER JOIN branch b ON s.branch_number = b.branch_number
-                    WHERE rp.status = 'Available'
-                    GROUP BY b.branch";
-
+    public function getAvailablePropertiesByBranch() {
+        $query = "SELECT b.branch AS branchName, rp.*, e.name
+                  FROM rentalproperty rp
+                  INNER JOIN supervisor s ON rp.supervisor_id = s.supervisor_id
+                  INNER JOIN employee e on e.employee_id = s.employee_id
+                  INNER JOIN branch b ON s.branch_number = b.branch_number
+                  WHERE rp.status = 'Available'
+                  GROUP BY b.branch, rp.property_number";
+    
         $params = array();
-
+    
         $result = $this->db->executeQuery($query, $params);
         $properties = array();
-
+    
         while ($row = $result->fetch_assoc()) {
-            $properties[$row['branchName']] = $row['numPropertiesAvailable'];   
+            $branchName = $row['branchName'];
+    
+            $rentalProperty = array(
+                'property_number' => $row['property_number'],
+                'owner_id' => $row['owner_id'],
+                'supervisor_id' => $row['supervisor_id'],
+                'street' => $row['street'],
+                'city' => $row['city'],
+                'zip' => $row['zip'],
+                'num_rooms' => $row['num_rooms'],
+                'monthly_rent' => $row['monthly_rent'],
+                'status' => $row['status'],
+                'start_date' => $row['start_date'],
+                'name' => $row['name']
+            );
+    
+            if (isset($properties[$branchName])) {
+                $properties[$branchName]['properties'][] = $rentalProperty;
+            } else {
+                $properties[$branchName] = array(
+                    'properties' => array($rentalProperty)
+                );
+            }
         }
-
+    
         return $properties;
     }
+    
 
     public function generateLeaseAgreement($tenantName, $propertyNumber, $homePhone, $workPhone, $startDate, $endDate, $depositAmount, $monthlyRent) {
         // Convert the non-string fields to their respective data types
@@ -136,12 +160,13 @@ class RentalManagementSystem {
      * @return array<Property>
      */
     public function getPropertiesByBranch($branchName) {
-        $query = "SELECT rp.*
+        $query = "SELECT rp.*,e.name as supervisor_name
                     FROM RentalProperty rp
                     JOIN PropertyOwner po ON rp.owner_id = po.owner_id
                     JOIN Supervisor s ON rp.supervisor_id = s.supervisor_id
+                    JOIN employee e ON e.employee_id = s.employee_id
                     JOIN Branch b ON s.branch_number = b.branch_number
-                    WHERE b.branch = ? and rp.status='Available'";
+                    WHERE b.branch = ? and rp.status='Available';";
 
     
         $params = array($branchName);
@@ -162,6 +187,7 @@ class RentalManagementSystem {
                 $row['status'],
                 $row['start_date']
             );
+            $property->setName($row['supervisor_name']);
             $properties[] = $property;
         }
         
@@ -231,10 +257,11 @@ class RentalManagementSystem {
 
 
 public function getPropertiesByOwner($ownerName, $ownerPhoneNumber, $branchName) {
-    $query = "SELECT rp.property_number, rp.owner_id, rp.supervisor_id, rp.street, rp.city, rp.zip, rp.num_rooms, rp.monthly_rent, rp.status, rp.start_date
+    $query = "SELECT rp.property_number, rp.owner_id, rp.supervisor_id, rp.street, rp.city, rp.zip, rp.num_rooms, rp.monthly_rent, rp.status, rp.start_date,e.name
               FROM RentalProperty rp
               JOIN PropertyOwner po ON rp.owner_id = po.owner_id
               JOIN Supervisor s ON rp.supervisor_id = s.supervisor_id
+              JOIN employee e ON e.employee_id = s.employee_id
               JOIN Branch b ON s.branch_number = b.branch_number
               WHERE po.name = ? AND po.phone = ? AND b.branch = ?";
 
@@ -254,7 +281,8 @@ public function getPropertiesByOwner($ownerName, $ownerPhoneNumber, $branchName)
             'numRooms' => $row['num_rooms'],
             'monthlyRent' => $row['monthly_rent'],
             'status' => $row['status'],
-            'startDate' => $row['start_date']
+            'startDate' => $row['start_date'],
+            'name' => $row['name']
         );
 
         // Add the property to the array
@@ -275,8 +303,11 @@ public function getPropertiesByOwner($ownerName, $ownerPhoneNumber, $branchName)
 }
 
 function getPropertiesByCriteria($city, $numRooms, $minRent, $maxRent) {
-    $query = "SELECT rp.property_number, rp.owner_id, rp.supervisor_id, rp.street, rp.city, rp.zip, rp.num_rooms, rp.monthly_rent, rp.status, rp.start_date
+    $query = "SELECT rp.property_number, rp.owner_id, rp.supervisor_id, rp.street, rp.city, rp.zip, rp.num_rooms, rp.monthly_rent, rp.status, rp.start_date,e.name
               FROM RentalProperty rp
+              JOIN PropertyOwner po ON rp.owner_id = po.owner_id
+              JOIN Supervisor s ON rp.supervisor_id = s.supervisor_id
+              JOIN employee e ON e.employee_id = s.employee_id
               WHERE 1=1";
 
 
@@ -316,6 +347,7 @@ function getPropertiesByCriteria($city, $numRooms, $minRent, $maxRent) {
             $row['status'],
             $row['start_date']
         );
+        $property->setName($row['name']);
 
         // Add the property to the array
         $properties[] = $property;
@@ -506,6 +538,22 @@ function getPropertiesByCriteria($city, $numRooms, $minRent, $maxRent) {
         );
 
         return $response;
+
+    }
+
+    public function showAvailablePropertiesGroupByCity(){
+        $query = "SELECT city, COUNT(*) AS count FROM RentalProperty WHERE status = 'Available' GROUP BY city order by COUNT(*) desc, city asc";
+        $params = array();
+        $result = $this->db->executeQuery($query,$params);
+        $data = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $city = $row['city'];
+            $count = $row['count'];
+            $data[] = array('city' => $city, 'count' => $count);
+        }
+
+        return $data;
 
     }
 

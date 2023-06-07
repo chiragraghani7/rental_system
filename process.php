@@ -71,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $rentalProperty = new RentalManagementSystem();
             $response = $rentalProperty->calculateAgencyEarningsPerMonth();
             break;
+        case 'show_available_properties_by_city':
+            $rentalProperty = new RentalManagementSystem();
+            $response = $rentalProperty->showAvailablePropertiesGroupByCity();
+            break;
         default:
             $response = 'Invalid optionsss';
             break;

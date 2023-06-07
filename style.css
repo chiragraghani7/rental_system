@@ -9,10 +9,12 @@
 }
 
 .property-details {
-    border: 1px solid #ccc;
+    border: 1px solid #8b1726;
     padding: 10px;
     margin-bottom: 10px;
     background-color: #f9f9f9;
+    margin: 0px 50px;
+
 }
 
 .property-details p {

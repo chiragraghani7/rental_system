@@ -12,6 +12,7 @@ class Property implements JsonSerializable{
     private $monthlyRent;
     private $status;
     private $startDate;
+    private $name;
 
     public function __construct($propertyNumber, $ownerId, $supervisorId, $street, $city, $zip, $numRooms, $monthlyRent, $status, $startDate) {
         $this->propertyNumber = $propertyNumber;
@@ -64,6 +65,14 @@ class Property implements JsonSerializable{
 
     public function getStartDate() {
         return $this->startDate;
+    }
+
+    public function setName($name){
+        $this->name = $name;
+    }
+
+    public function getName(){
+        return $this->name;
     }
 
     public function __toString() {

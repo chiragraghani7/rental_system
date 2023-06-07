@@ -30,7 +30,7 @@ class ShowProperty  {
 
     public function showAvailablePropertiesByBranch(){
         $system = new RentalManagementSystem();
-        $showProperty = $system->getvailablePropertiesByBranch();
+        $showProperty = $system->getAvailablePropertiesByBranch();
         return $showProperty;
     }
 

@@ -1,8 +1,9 @@
 <?php
 
-$conn = mysqli_connect("localhost","root","Chirag@99","rental_management_system");
+$conn = mysqli_connect("localhost:3306","root","Act1v@9015","rental_management_system");
 if(!$conn){
-    die("connection cancelled".mysqli_connect_error());
+ die("connection cancelled".mysqli_connect_error());
+
 }else{
     echo "connection eastablished";
 }
